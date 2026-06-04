@@ -1,5 +1,5 @@
 (() => {
-    // Apollo Storage Wrapper with Supabase Hybrid Cloud Sync
+    // Apollo Storage Wrapper with Supabase Hybrid Cloud Sync (Google OAuth)
     const STORAGE_KEYS = {
         LOGS: 'apollo_logs',
         GOALS: 'apollo_goals',
@@ -11,7 +11,7 @@
 
     let supabase = null;
 
-    // Initialize Supabase Client
+    // Initialize Supabase Client & Register Auth State Listeners
     function initSupabase() {
         let url = window.ApolloConfig?.supabaseUrl;
         let key = window.ApolloConfig?.supabaseKey;
@@ -25,6 +25,20 @@
         if (url && key && window.supabase) {
             try {
                 supabase = window.supabase.createClient(url, key);
+                
+                // Track real-time Auth state shifts (especially successful redirect callbacks)
+                supabase.auth.onAuthStateChange(async (event, session) => {
+                    if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session) {
+                        // Background download on successful login/callback
+                        await window.ApolloStorage.pullFromCloud();
+                        
+                        // Refresh the Sync Control Panel UI if currently open
+                        const container = document.getElementById('syncModalOverlay');
+                        if (container && container.style.display === 'flex') {
+                            renderSyncModalContent();
+                        }
+                    }
+                });
             } catch (e) {
                 console.error("Failed to initialize Supabase client:", e);
                 supabase = null;
@@ -413,7 +427,7 @@
                     window.dispatchEvent(new Event('apollo_data_updated'));
                     return true;
                 } else if (localUpdated > remoteUpdated) {
-                    // Local is newer (e.g. offline edits made), push up
+                    // Local is newer, push up
                     await this.pushToCloud();
                 }
                 return true;
@@ -436,7 +450,7 @@
 
     // --- INTERACTIVE SWISS CONFIG MODAL ENGINE ---
 
-    // Dynamic style injection for Swiss-style Modal
+    // Dynamic style injection for Swiss-style Modal (Includes Google button aesthetics)
     function injectModalStyles() {
         if (document.getElementById('apolloSyncModalStyles')) return;
         
@@ -506,30 +520,9 @@
             }
             .sync-info-text {
                 font-size: 0.875rem;
-                line-height: 1.4;
+                line-height: 1.45;
                 color: var(--text-light, #5e5e6e);
                 margin-bottom: 1.25rem;
-            }
-            .sync-tabs {
-                display: flex;
-                border-bottom: 2px solid var(--border-color, #000000);
-                margin-bottom: 1.25rem;
-            }
-            .sync-tab-btn {
-                flex: 1;
-                background: none;
-                border: none;
-                padding: 0.75rem;
-                font-size: 0.85rem;
-                font-weight: 700;
-                cursor: pointer;
-                text-transform: uppercase;
-                color: var(--text-light, #5e5e6e);
-                text-align: center;
-            }
-            .sync-tab-btn.active {
-                background-color: var(--border-color, #000000);
-                color: var(--bg-card, #ffffff);
             }
             .sync-form-group {
                 margin-bottom: 1rem;
@@ -591,6 +584,35 @@
                 background-color: var(--border-color, #000000);
                 color: var(--bg-card, #ffffff);
             }
+            
+            /* stark brand google auth button styles matching swiss layout */
+            .sync-google-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.75rem;
+                background-color: var(--bg-card, #ffffff);
+                color: var(--text-main, #000000);
+                border: 2px solid var(--border-color, #000000);
+                padding: 0.75rem;
+                font-family: 'Inter', sans-serif;
+                font-size: 0.875rem;
+                font-weight: 700;
+                cursor: pointer;
+                width: 100%;
+                margin: 1rem 0;
+            }
+            .sync-google-btn:hover {
+                background-color: var(--border-color, #000000);
+                color: var(--bg-card, #ffffff);
+            }
+            .sync-google-btn:hover svg path {
+                fill: var(--bg-card, #ffffff) !important;
+            }
+            .google-icon {
+                width: 18px; height: 18px;
+            }
+
             .sync-status-badge {
                 display: inline-flex;
                 align-items: center;
@@ -622,6 +644,7 @@
                 color: #ef4444;
                 margin-top: 0.5rem;
                 font-weight: 600;
+                text-align: center;
             }
             .sync-collapsible {
                 margin-top: 1rem;
@@ -774,52 +797,45 @@ CREATE POLICY "Owner update" ON apollo_user_data
             return;
         }
 
-        // SCENARIO 2: Connected to Supabase Project but not Logged In
+        // SCENARIO 2: Connected but not Logged In (Google OAuth Only)
         if (!user) {
+            const shortUrl = supabase.supabaseUrl.replace('https://', '');
             container.innerHTML = `
                 <div class="sync-modal-card">
                     <div class="sync-modal-header">
                         <h3>Supabase Cloud Sync</h3>
                         <button class="sync-modal-close" id="modalCloseBtn">&times;</button>
                     </div>
-                    <div class="sync-tabs">
-                        <button class="sync-tab-btn active" id="tabLoginBtn">Sign In</button>
-                        <button class="sync-tab-btn" id="tabRegisterBtn">Sign Up</button>
-                    </div>
                     <div class="sync-modal-body">
                         <div class="sync-meta-panel" style="margin-top:-0.5rem;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <span style="font-weight:700;">Database:</span>
-                                <span style="color:var(--text-light); text-overflow:ellipsis; overflow:hidden; max-width:250px;">${supabase.supabaseUrl}</span>
+                                <span style="color:var(--text-light); text-overflow:ellipsis; overflow:hidden; max-width:230px;">${shortUrl}</span>
                             </div>
                             <button id="disconnectProjBtn" class="sync-btn-secondary" style="font-size:0.75rem; padding:0.25rem; margin-top:0.25rem;">Disconnect Project</button>
                         </div>
 
-                        <form id="authSyncForm">
-                            <div class="sync-form-group">
-                                <label for="authEmail">Email Address</label>
-                                <input type="email" id="authEmail" class="sync-input" placeholder="name@domain.com" required>
-                            </div>
-                            <div class="sync-form-group">
-                                <label for="authPassword">Password</label>
-                                <input type="password" id="authPassword" class="sync-input" placeholder="••••••••" required>
-                            </div>
-                            <div id="authError" class="sync-error-msg" style="display:none;"></div>
-                            <button type="submit" class="sync-btn-primary" id="authSubmitBtn" style="margin-top:0.5rem;">Sign In</button>
-                        </form>
+                        <p class="sync-info-text" style="text-align:center;">
+                            Authenticate securely with your Google account to automatically back up and synchronize your logs, goals, and reminders across all your devices.
+                        </p>
+
+                        <button id="googleSignInBtn" class="sync-google-btn">
+                            <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-3.3 3.28-8.19 3.28-13.69z" fill="#4285F4"/>
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                            </svg>
+                            <span>Continue with Google</span>
+                        </button>
+                        
+                        <div id="authError" class="sync-error-msg" style="display:none;"></div>
                     </div>
                 </div>
             `;
 
             // Listeners
-            let activeTab = 'login';
-            const emailInput = document.getElementById('authEmail');
-            const passInput = document.getElementById('authPassword');
             const errBox = document.getElementById('authError');
-            const submitBtn = document.getElementById('authSubmitBtn');
-            const tabLoginBtn = document.getElementById('tabLoginBtn');
-            const tabRegisterBtn = document.getElementById('tabRegisterBtn');
-
             document.getElementById('modalCloseBtn').onclick = closeSyncModal;
             
             document.getElementById('disconnectProjBtn').onclick = () => {
@@ -831,62 +847,23 @@ CREATE POLICY "Owner update" ON apollo_user_data
                 }
             };
 
-            tabLoginBtn.onclick = () => {
-                activeTab = 'login';
-                tabLoginBtn.classList.add('active');
-                tabRegisterBtn.classList.remove('active');
-                submitBtn.textContent = 'Sign In';
+            document.getElementById('googleSignInBtn').onclick = async () => {
                 errBox.style.display = 'none';
-            };
-
-            tabRegisterBtn.onclick = () => {
-                activeTab = 'register';
-                tabRegisterBtn.classList.add('active');
-                tabLoginBtn.classList.remove('active');
-                submitBtn.textContent = 'Create Account';
-                errBox.style.display = 'none';
-            };
-
-            document.getElementById('authSyncForm').onsubmit = async (e) => {
-                e.preventDefault();
-                submitBtn.disabled = true;
-                submitBtn.textContent = activeTab === 'login' ? 'Signing In...' : 'Signing Up...';
-                errBox.style.display = 'none';
-
-                const email = emailInput.value.trim();
-                const password = passInput.value;
-
                 try {
-                    if (activeTab === 'login') {
-                        const { error } = await supabase.auth.signInWithPassword({ email, password });
-                        if (error) {
-                            errBox.textContent = error.message;
-                            errBox.style.display = 'block';
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = 'Sign In';
-                        } else {
-                            // Successful login, pull and refresh view
-                            await window.ApolloStorage.pullFromCloud();
-                            renderSyncModalContent();
+                    const { error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            // Automatically redirects back to the current site pathname (works on localhost & netlify!)
+                            redirectTo: window.location.origin + window.location.pathname
                         }
-                    } else {
-                        const { error } = await supabase.auth.signUp({ email, password });
-                        if (error) {
-                            errBox.textContent = error.message;
-                            errBox.style.display = 'block';
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = 'Create Account';
-                        } else {
-                            alert("Account successfully registered! If you configured email confirmation, please check your inbox.");
-                            activeTab = 'login';
-                            tabLoginBtn.click();
-                        }
+                    });
+                    if (error) {
+                        errBox.textContent = error.message;
+                        errBox.style.display = 'block';
                     }
                 } catch (err) {
-                    errBox.textContent = "A system authentication error occurred.";
+                    errBox.textContent = "Google Connection failed. Verify your Supabase Google Auth Provider is enabled.";
                     errBox.style.display = 'block';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = activeTab === 'login' ? 'Sign In' : 'Create Account';
                 }
             };
             return;
