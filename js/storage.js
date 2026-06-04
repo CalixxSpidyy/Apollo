@@ -29,8 +29,8 @@
                 // Track real-time Auth state shifts (especially successful redirect callbacks)
                 supabase.auth.onAuthStateChange(async (event, session) => {
                     if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session) {
-                        // Background download on successful login/callback
-                        await window.ApolloStorage.pullFromCloud();
+                        // Background download on successful login/callback (forced pull to prevent empty seed overrides)
+                        await window.ApolloStorage.pullFromCloud(true);
                         
                         // Refresh the Sync Control Panel UI if currently open
                         const container = document.getElementById('syncModalOverlay');
@@ -86,95 +86,12 @@
         return `${m}m`;
     }
 
-    // Seed beautiful default data if storage is empty
+    // Seed default blank structures if storage is empty
     function seedDefaultData() {
-        const todayStr = getLocalDateString();
-        const yesterdayStr = getLocalDateString(new Date(Date.now() - 86400000));
-        const tomorrowStr = getLocalDateString(new Date(Date.now() + 86400000));
-
-        // Sample Goals
-        const defaultGoals = [
-            {
-                id: 'goal-1',
-                name: 'UI Redesign of Apollo',
-                period: 'week',
-                type: 'progress-based',
-                targetTime: 600, // 10 hours
-                currentTime: 180, // 3 hours
-                startDate: todayStr,
-                completed: false,
-                logs: [
-                    { id: 'log-1', note: 'Drafted architecture and state layer', amt: 120, date: yesterdayStr },
-                    { id: 'log-2', note: 'Created style tokens and global components', amt: 60, date: todayStr }
-                ]
-            },
-            {
-                id: 'goal-2',
-                name: 'Morning Mindfulness',
-                period: 'day',
-                type: 'repeat',
-                interval: 1, // repeat every day
-                startDate: yesterdayStr,
-                completed: false,
-                logs: []
-            },
-            {
-                id: 'goal-3',
-                name: 'Read Designing Systems',
-                period: 'month',
-                type: 'one-time',
-                startDate: todayStr,
-                completed: false,
-                logs: []
-            }
-        ];
-
-        // Sample Daily Logs
-        const defaultLogs = {
-            [yesterdayStr]: {
-                date: yesterdayStr,
-                display_id: generateRandomCode(),
-                tasks: [
-                    { id: 100001, text: 'Review feedback on Khalix app', completed: true, priority: 'normal', goalId: null, timeSpent: 0 },
-                    { id: 100002, text: 'Plan database schema migration', completed: true, priority: 'prio', goalId: 'goal-1', timeSpent: 120 },
-                    { id: 100003, text: 'Clean coffee machine', completed: false, priority: 'low', goalId: null, timeSpent: 0 }
-                ],
-                note: '<div>Started planning the redesign for <strong>Apollo</strong> dashboard today. The transition away from Supabase should simplify local usage tremendously.</div><ul><li>Discussed core goals with the team</li><li>Concluded that minimalist design language will work best</li></ul>'
-            },
-            [todayStr]: {
-                date: todayStr,
-                display_id: generateRandomCode(),
-                tasks: [
-                    { id: 100004, text: 'Refactor UI with flat color system', completed: false, priority: 'prio', goalId: 'goal-1', timeSpent: 60 },
-                    { id: 100005, text: 'Meditate for 15 minutes', completed: true, priority: 'normal', goalId: 'goal-2', timeSpent: 15 },
-                    { id: 100006, text: 'Set up local storage layer', completed: true, priority: 'prio', goalId: null, timeSpent: 0 }
-                ],
-                note: '<div>Woke up feeling motivated today. Seeding Apollo database structure in local storage was incredibly straightforward.</div><div><br></div><div>Looking forward to adding the calendar reminders next. <em>Everything is super fast.</em></div>'
-            }
-        };
-
-        // Sample Reminders
-        const defaultReminders = [
-            {
-                id: 'rem-1',
-                date: todayStr,
-                title: 'Review redesigned dashboard layout',
-                note: 'Double check visual alignment and color palette',
-                time: '14:30'
-            },
-            {
-                id: 'rem-2',
-                date: tomorrowStr,
-                title: 'Design review with client',
-                note: 'Demonstrate local storage and goals syncing features',
-                time: '10:00'
-            }
-        ];
-
-        localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(defaultGoals));
-        localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(defaultLogs));
-        localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(defaultReminders));
-        localStorage.setItem(STORAGE_KEYS.LAST_UPDATED, new Date().toISOString());
+        localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify({}));
+        localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.LAST_UPDATED, "2000-01-01T00:00:00.000Z");
     }
 
     // Clean up empty logs from storage
@@ -348,9 +265,9 @@
         async getLoggedInUser() {
             if (!supabase) return null;
             try {
-                const { data: { user }, error } = await supabase.auth.getUser();
-                if (error || !user) return null;
-                return user;
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error || !session) return null;
+                return session.user;
             } catch (e) {
                 return null;
             }
@@ -389,7 +306,7 @@
             }
         },
 
-        // Pull latest state from Supabase, merge using LWW timestamps
+        // Pull latest state from Supabase and overwrite local cache (Sovereign Cloud Source of Truth)
         async pullFromCloud() {
             if (!supabase) return false;
             try {
@@ -413,23 +330,13 @@
                     return true;
                 }
 
-                const remoteUpdated = data.updated_at ? new Date(data.updated_at).getTime() : 0;
-                const localUpdatedStr = localStorage.getItem(STORAGE_KEYS.LAST_UPDATED);
-                const localUpdated = localUpdatedStr ? new Date(localUpdatedStr).getTime() : 0;
-
-                if (remoteUpdated > localUpdated) {
-                    // Overwrite local with newer remote data
-                    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(data.logs || {}));
-                    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals || []));
-                    localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(data.reminders || []));
-                    localStorage.setItem(STORAGE_KEYS.LAST_UPDATED, data.updated_at);
-                    
-                    window.dispatchEvent(new Event('apollo_data_updated'));
-                    return true;
-                } else if (localUpdated > remoteUpdated) {
-                    // Local is newer, push up
-                    await this.pushToCloud();
-                }
+                // Always overwrite local cache with cloud data since Cloud is the sovereign source of truth
+                localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(data.logs || {}));
+                localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals || []));
+                localStorage.setItem(STORAGE_KEYS.REMINDERS, JSON.stringify(data.reminders || []));
+                localStorage.setItem(STORAGE_KEYS.LAST_UPDATED, data.updated_at || new Date().toISOString());
+                
+                window.dispatchEvent(new Event('apollo_data_updated'));
                 return true;
             } catch (e) {
                 console.error("Cloud pull error:", e);
@@ -691,6 +598,11 @@
             container = document.createElement('div');
             container.id = 'syncModalOverlay';
             container.className = 'sync-modal-overlay';
+            container.addEventListener('click', (e) => {
+                if (e.target === container) {
+                    closeSyncModal();
+                }
+            });
             document.body.appendChild(container);
         }
 
@@ -708,11 +620,23 @@
         const container = document.getElementById('syncModalOverlay');
         if (!container) return;
 
-        const isConnected = window.ApolloStorage.isSupabaseConnected();
-        const user = isConnected ? await window.ApolloStorage.getLoggedInUser() : null;
+        try {
+            const isConnected = window.ApolloStorage.isSupabaseConnected();
+            const user = isConnected ? await window.ApolloStorage.getLoggedInUser() : null;
 
-        // SQL Schema for Collapsible Help Box
-        const sqlSchema = `CREATE TABLE apollo_user_data (
+            // Unified Backup & Reset HTML section
+            const backupResetHtml = `
+                <div style="margin-top: 1.5rem; border-top: 2px solid var(--border-color, #000000); padding-top: 1rem;">
+                    <h4 style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; margin: 0 0 0.75rem 0; color: var(--text-light, #5e5e6e); letter-spacing: 0.05em;">Backup & Reset</h4>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button id="modalExportBtn" class="sync-btn-secondary" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.75rem; font-weight: 700;">Export Backup</button>
+                        <button id="modalResetBtn" class="sync-btn-secondary" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.75rem; font-weight: 700; color: #ef4444; border-color: rgba(239, 68, 68, 0.25);">Reset All</button>
+                    </div>
+                </div>
+            `;
+
+            // SQL Schema for Collapsible Help Box
+            const sqlSchema = `CREATE TABLE apollo_user_data (
   user_id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   logs JSONB DEFAULT '{}'::jsonb,
   goals JSONB DEFAULT '[]'::jsonb,
@@ -731,241 +655,305 @@ CREATE POLICY "Owner insert" ON apollo_user_data
 CREATE POLICY "Owner update" ON apollo_user_data
   FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);`;
 
-        // SCENARIO 1: Unconfigured / Dynamic Credentials Inputs
-        if (!isConnected) {
-            container.innerHTML = `
-                <div class="sync-modal-card">
-                    <div class="sync-modal-header">
-                        <h3>Supabase Storage Setup</h3>
-                        <button class="sync-modal-close" id="modalCloseBtn">&times;</button>
-                    </div>
-                    <div class="sync-modal-body">
-                        <p class="sync-info-text">
-                            Apollo uses Supabase to sync and persist your data across multiple devices. Enter your project's URL and public API key below.
-                        </p>
-                        
-                        <form id="setupConfigForm">
-                            <div class="sync-form-group">
-                                <label for="supUrl">Supabase Project URL</label>
-                                <input type="url" id="supUrl" class="sync-input" placeholder="https://your-project.supabase.co" required>
-                            </div>
-                            <div class="sync-form-group">
-                                <label for="supKey">Public Anon Key</label>
-                                <input type="text" id="supKey" class="sync-input" placeholder="eyJhbGciOiJIUzI1Ni..." required>
-                            </div>
-                            <div id="setupError" class="sync-error-msg" style="display:none;"></div>
-                            <button type="submit" class="sync-btn-primary" style="margin-top:0.5rem;">Connect Supabase</button>
-                        </form>
-
-                        <details class="sync-collapsible">
-                            <summary>Required SQL Database Schema</summary>
-                            <p style="font-size:0.75rem;margin:0.5rem 0 0.25rem;color:var(--text-light);">
-                                Execute this statement inside your Supabase project's SQL Editor to set up the data table and security rules:
+            // SCENARIO 1: Unconfigured / Dynamic Credentials Inputs
+            if (!isConnected) {
+                container.innerHTML = `
+                    <div class="sync-modal-card">
+                        <div class="sync-modal-header">
+                            <h3>Supabase Storage Setup</h3>
+                            <button class="sync-modal-close" id="modalCloseBtn">&times;</button>
+                        </div>
+                        <div class="sync-modal-body">
+                            <p class="sync-info-text">
+                                Apollo uses Supabase to sync and persist your data across multiple devices. Enter your project's URL and public API key below.
                             </p>
-                            <pre>${sqlSchema}</pre>
-                        </details>
+                            
+                            <form id="setupConfigForm">
+                                <div class="sync-form-group">
+                                    <label for="supUrl">Supabase Project URL</label>
+                                    <input type="url" id="supUrl" class="sync-input" placeholder="https://your-project.supabase.co" required>
+                                </div>
+                                <div class="sync-form-group">
+                                    <label for="supKey">Public Anon Key</label>
+                                    <input type="text" id="supKey" class="sync-input" placeholder="eyJhbGciOiJIUzI1Ni..." required>
+                                </div>
+                                <div id="setupError" class="sync-error-msg" style="display:none;"></div>
+                                <button type="submit" class="sync-btn-primary" style="margin-top:0.5rem;">Connect Supabase</button>
+                            </form>
+
+                            <details class="sync-collapsible">
+                                <summary>Required SQL Database Schema</summary>
+                                <p style="font-size:0.75rem;margin:0.5rem 0 0.25rem;color:var(--text-light);">
+                                    Execute this statement inside your Supabase project's SQL Editor to set up the data table and security rules:
+                                </p>
+                                <pre>${sqlSchema}</pre>
+                            </details>
+
+                            ${backupResetHtml}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
 
-            // Setup listeners
-            document.getElementById('modalCloseBtn').onclick = closeSyncModal;
-            document.getElementById('setupConfigForm').onsubmit = (e) => {
-                e.preventDefault();
-                const url = document.getElementById('supUrl').value.trim();
-                const key = document.getElementById('supKey').value.trim();
-                const errBox = document.getElementById('setupError');
+                // Setup listeners
+                document.getElementById('modalCloseBtn').onclick = closeSyncModal;
+                document.getElementById('setupConfigForm').onsubmit = (e) => {
+                    e.preventDefault();
+                    const url = document.getElementById('supUrl').value.trim();
+                    const key = document.getElementById('supKey').value.trim();
+                    const errBox = document.getElementById('setupError');
 
-                if (url && key) {
-                    try {
-                        localStorage.setItem(STORAGE_KEYS.SUPABASE_URL, url);
-                        localStorage.setItem(STORAGE_KEYS.SUPABASE_KEY, key);
+                    if (url && key) {
+                        try {
+                            localStorage.setItem(STORAGE_KEYS.SUPABASE_URL, url);
+                            localStorage.setItem(STORAGE_KEYS.SUPABASE_KEY, key);
+                            initSupabase();
+
+                            if (window.ApolloStorage.isSupabaseConnected()) {
+                                renderSyncModalContent();
+                            } else {
+                                errBox.textContent = "Could not initialize client. Check your URL formatting.";
+                                errBox.style.display = 'block';
+                            }
+                        } catch (err) {
+                            errBox.textContent = "Error setting configuration. Please retry.";
+                            errBox.style.display = 'block';
+                        }
+                    }
+                };
+            }
+            // SCENARIO 2: Connected but not Logged In (Google OAuth Only)
+            else if (!user) {
+                const shortUrl = supabase.supabaseUrl.replace('https://', '');
+                container.innerHTML = `
+                    <div class="sync-modal-card">
+                        <div class="sync-modal-header">
+                            <h3>Supabase Cloud Sync</h3>
+                            <button class="sync-modal-close" id="modalCloseBtn">&times;</button>
+                        </div>
+                        <div class="sync-modal-body">
+                            <div class="sync-meta-panel" style="margin-top:-0.5rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-weight:700;">Database:</span>
+                                    <span style="color:var(--text-light); text-overflow:ellipsis; overflow:hidden; max-width:230px;">${shortUrl}</span>
+                                </div>
+                                <button id="disconnectProjBtn" class="sync-btn-secondary" style="font-size:0.75rem; padding:0.25rem; margin-top:0.25rem;">Disconnect Project</button>
+                            </div>
+
+                            <p class="sync-info-text" style="text-align:center;">
+                                Authenticate securely with your Google account to automatically back up and synchronize your logs, goals, and reminders across all your devices.
+                            </p>
+
+                            <button id="googleSignInBtn" class="sync-google-btn">
+                                <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-3.3 3.28-8.19 3.28-13.69z" fill="#4285F4"/>
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                </svg>
+                                <span>Continue with Google</span>
+                            </button>
+                            
+                            <div id="authError" class="sync-error-msg" style="display:none;"></div>
+
+                            ${backupResetHtml}
+                        </div>
+                    </div>
+                `;
+
+                // Listeners
+                const errBox = document.getElementById('authError');
+                document.getElementById('modalCloseBtn').onclick = closeSyncModal;
+                
+                document.getElementById('disconnectProjBtn').onclick = () => {
+                    if (confirm("Disconnect and reset your Supabase project keys?")) {
+                        localStorage.removeItem(STORAGE_KEYS.SUPABASE_URL);
+                        localStorage.removeItem(STORAGE_KEYS.SUPABASE_KEY);
                         initSupabase();
+                        renderSyncModalContent();
+                    }
+                };
 
-                        if (window.ApolloStorage.isSupabaseConnected()) {
-                            renderSyncModalContent();
-                        } else {
-                            errBox.textContent = "Could not initialize client. Check your URL formatting.";
+                document.getElementById('googleSignInBtn').onclick = async () => {
+                    errBox.style.display = 'none';
+                    try {
+                        const { error } = await supabase.auth.signInWithOAuth({
+                            provider: 'google',
+                            options: {
+                                redirectTo: window.location.origin + window.location.pathname
+                            }
+                        });
+                        if (error) {
+                            errBox.textContent = error.message;
                             errBox.style.display = 'block';
                         }
                     } catch (err) {
-                        errBox.textContent = "Error setting configuration. Please retry.";
+                        errBox.textContent = "Google Connection failed. Verify your Supabase Google Auth Provider is enabled.";
                         errBox.style.display = 'block';
                     }
+                };
+            }
+            // SCENARIO 3: Logged In & Syncing Status Dashboard
+            else {
+                const localLastUpdated = localStorage.getItem(STORAGE_KEYS.LAST_UPDATED);
+                let lastUpdatedText = 'Never';
+                if (localLastUpdated) {
+                    const dateObj = new Date(localLastUpdated);
+                    if (!isNaN(dateObj.getTime())) {
+                        lastUpdatedText = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    }
                 }
-            };
-            return;
-        }
 
-        // SCENARIO 2: Connected but not Logged In (Google OAuth Only)
-        if (!user) {
-            const shortUrl = supabase.supabaseUrl.replace('https://', '');
+                container.innerHTML = `
+                    <div class="sync-modal-card">
+                        <div class="sync-modal-header">
+                            <h3>Apollo Storage Sync</h3>
+                            <button class="sync-modal-close" id="modalCloseBtn">&times;</button>
+                        </div>
+                        <div class="sync-modal-body">
+                            <div class="sync-meta-panel">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-weight:700;">Account:</span>
+                                    <span>${user.email}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-weight:700;">Status:</span>
+                                    <div class="sync-status-badge">
+                                        <span class="sync-status-dot active"></span>
+                                        <span>Synced</span>
+                                    </div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-weight:700;">Last Update Check:</span>
+                                    <span>${lastUpdatedText}</span>
+                                </div>
+                            </div>
+
+                            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                                <button id="forcePullBtn" class="sync-btn-secondary" style="width:100%; padding:0.75rem; font-weight:700;">
+                                    Force Cloud Pull (Download)
+                                </button>
+                                <button id="forcePushBtn" class="sync-btn-secondary" style="width:100%; padding:0.75rem; font-weight:700;">
+                                    Force Cloud Push (Upload)
+                                </button>
+                                <button id="logoutBtn" class="sync-btn-primary" style="width:100%; padding:0.75rem; background-color:#ef4444; border-color:#ef4444; font-weight:700;">
+                                    Log Out
+                                </button>
+                            </div>
+
+                            ${backupResetHtml}
+                        </div>
+                    </div>
+                `;
+
+                // Listeners
+                document.getElementById('modalCloseBtn').onclick = closeSyncModal;
+                
+                document.getElementById('forcePullBtn').onclick = async () => {
+                    const btn = document.getElementById('forcePullBtn');
+                    btn.disabled = true;
+                    btn.textContent = 'Pulling...';
+                    
+                    try {
+                        const ok = await window.ApolloStorage.pullFromCloud();
+                        if (ok) {
+                            alert("Data successfully downloaded from Supabase!");
+                        } else {
+                            alert("Download failed. Make sure your database table contains valid rows.");
+                        }
+                    } catch (err) {
+                        alert("Error during sync pull.");
+                    }
+                    renderSyncModalContent();
+                };
+
+                document.getElementById('forcePushBtn').onclick = async () => {
+                    const btn = document.getElementById('forcePushBtn');
+                    btn.disabled = true;
+                    btn.textContent = 'Pushing...';
+                    
+                    try {
+                        const ok = await window.ApolloStorage.pushToCloud();
+                        if (ok) {
+                            alert("Local data successfully uploaded and synchronized on Supabase!");
+                        } else {
+                            alert("Upload failed. Verify database connectivity.");
+                        }
+                    } catch (err) {
+                        alert("Error during sync push.");
+                    }
+                    renderSyncModalContent();
+                };
+
+                document.getElementById('logoutBtn').onclick = async () => {
+                    if (confirm("Log out of Apollo Sync? This will clear your current local session cache and reset local values to samples.")) {
+                        try {
+                            await supabase.auth.signOut();
+                            window.ApolloStorage.resetAll();
+                            closeSyncModal();
+                        } catch (err) {
+                            alert("Error signing out.");
+                        }
+                    }
+                };
+            }
+
+            // Wire up modal Export & Reset buttons (available in all scenarios)
+            const modalExport = document.getElementById('modalExportBtn');
+            if (modalExport) {
+                modalExport.onclick = () => {
+                    const logs = window.ApolloStorage.getLogs();
+                    const goals = window.ApolloStorage.getGoals();
+                    const reminders = window.ApolloStorage.getReminders();
+
+                    const fullData = { logs, goals, reminders, export_time: new Date().toISOString() };
+                    const dataStr = JSON.stringify(fullData, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `apollo-dashboard-backup-${window.ApolloStorage.getLocalDateString()}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                };
+            }
+
+            const modalReset = document.getElementById('modalResetBtn');
+            if (modalReset) {
+                modalReset.onclick = () => {
+                    if (confirm("Reset ALL data in Apollo? This will replace your logs, goals, and reminders with a fresh blank state.")) {
+                        window.ApolloStorage.resetAll();
+                        closeSyncModal();
+                        window.location.reload();
+                    }
+                };
+            }
+
+        } catch (error) {
+            console.error("Fatal error rendering sync modal:", error);
+            // Fallback UI to prevent screen-lock on exception
             container.innerHTML = `
                 <div class="sync-modal-card">
                     <div class="sync-modal-header">
-                        <h3>Supabase Cloud Sync</h3>
+                        <h3>Sync Rendering Error</h3>
                         <button class="sync-modal-close" id="modalCloseBtn">&times;</button>
                     </div>
                     <div class="sync-modal-body">
-                        <div class="sync-meta-panel" style="margin-top:-0.5rem;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="font-weight:700;">Database:</span>
-                                <span style="color:var(--text-light); text-overflow:ellipsis; overflow:hidden; max-width:230px;">${shortUrl}</span>
-                            </div>
-                            <button id="disconnectProjBtn" class="sync-btn-secondary" style="font-size:0.75rem; padding:0.25rem; margin-top:0.25rem;">Disconnect Project</button>
-                        </div>
-
-                        <p class="sync-info-text" style="text-align:center;">
-                            Authenticate securely with your Google account to automatically back up and synchronize your logs, goals, and reminders across all your devices.
+                        <p class="sync-info-text" style="color: #ef4444; font-weight: 600;">
+                            A rendering error occurred inside the Settings modal. Please refresh the page or reset project data.
                         </p>
-
-                        <button id="googleSignInBtn" class="sync-google-btn">
-                            <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-3.3 3.28-8.19 3.28-13.69z" fill="#4285F4"/>
-                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
-                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                            </svg>
-                            <span>Continue with Google</span>
-                        </button>
-                        
-                        <div id="authError" class="sync-error-msg" style="display:none;"></div>
+                        <button id="modalResetFallbackBtn" class="sync-btn-primary" style="background-color: #ef4444; border-color: #ef4444; font-weight: 700;">Reset Cache & Keys</button>
                     </div>
                 </div>
             `;
-
-            // Listeners
-            const errBox = document.getElementById('authError');
             document.getElementById('modalCloseBtn').onclick = closeSyncModal;
-            
-            document.getElementById('disconnectProjBtn').onclick = () => {
-                if (confirm("Disconnect and reset your Supabase project keys?")) {
-                    localStorage.removeItem(STORAGE_KEYS.SUPABASE_URL);
-                    localStorage.removeItem(STORAGE_KEYS.SUPABASE_KEY);
-                    initSupabase();
-                    renderSyncModalContent();
+            document.getElementById('modalResetFallbackBtn').onclick = () => {
+                if (confirm("Perform a hard reset of local cache and Supabase project configurations?")) {
+                    localStorage.clear();
+                    window.location.reload();
                 }
             };
-
-            document.getElementById('googleSignInBtn').onclick = async () => {
-                errBox.style.display = 'none';
-                try {
-                    const { error } = await supabase.auth.signInWithOAuth({
-                        provider: 'google',
-                        options: {
-                            // Automatically redirects back to the current site pathname (works on localhost & netlify!)
-                            redirectTo: window.location.origin + window.location.pathname
-                        }
-                    });
-                    if (error) {
-                        errBox.textContent = error.message;
-                        errBox.style.display = 'block';
-                    }
-                } catch (err) {
-                    errBox.textContent = "Google Connection failed. Verify your Supabase Google Auth Provider is enabled.";
-                    errBox.style.display = 'block';
-                }
-            };
-            return;
         }
-
-        // SCENARIO 3: Logged In & Syncing Status Dashboard
-        const localLastUpdated = localStorage.getItem(STORAGE_KEYS.LAST_UPDATED);
-        const lastUpdatedText = localLastUpdated ? new Date(localLastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Never';
-
-        container.innerHTML = `
-            <div class="sync-modal-card">
-                <div class="sync-modal-header">
-                    <h3>Apollo Storage Sync</h3>
-                    <button class="sync-modal-close" id="modalCloseBtn">&times;</button>
-                </div>
-                <div class="sync-modal-body">
-                    <div class="sync-meta-panel">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-weight:700;">Account:</span>
-                            <span>${user.email}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-weight:700;">Status:</span>
-                            <div class="sync-status-badge">
-                                <span class="sync-status-dot active"></span>
-                                <span>Synced</span>
-                            </div>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-weight:700;">Last Update Check:</span>
-                            <span>${lastUpdatedText}</span>
-                        </div>
-                    </div>
-
-                    <div style="display:flex; flex-direction:column; gap:0.75rem;">
-                        <button id="forcePullBtn" class="sync-btn-secondary" style="width:100%; padding:0.75rem;">
-                            Force Cloud Pull (Download)
-                        </button>
-                        <button id="forcePushBtn" class="sync-btn-secondary" style="width:100%; padding:0.75rem;">
-                            Force Cloud Push (Upload)
-                        </button>
-                        <button id="logoutBtn" class="sync-btn-primary" style="width:100%; padding:0.75rem; background-color:#ef4444; border-color:#ef4444;">
-                            Log Out
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Listeners
-        document.getElementById('modalCloseBtn').onclick = closeSyncModal;
-        
-        document.getElementById('forcePullBtn').onclick = async () => {
-            const btn = document.getElementById('forcePullBtn');
-            btn.disabled = true;
-            btn.textContent = 'Pulling...';
-            
-            try {
-                // Clear timestamps to force local override
-                localStorage.setItem(STORAGE_KEYS.LAST_UPDATED, "2000-01-01T00:00:00.000Z");
-                const ok = await window.ApolloStorage.pullFromCloud();
-                if (ok) {
-                    alert("Data successfully downloaded from Supabase!");
-                } else {
-                    alert("Download failed. Make sure your database table contains valid rows.");
-                }
-            } catch (err) {
-                alert("Error during sync pull.");
-            }
-            renderSyncModalContent();
-        };
-
-        document.getElementById('forcePushBtn').onclick = async () => {
-            const btn = document.getElementById('forcePushBtn');
-            btn.disabled = true;
-            btn.textContent = 'Pushing...';
-            
-            try {
-                localStorage.setItem(STORAGE_KEYS.LAST_UPDATED, new Date().toISOString());
-                const ok = await window.ApolloStorage.pushToCloud();
-                if (ok) {
-                    alert("Local data successfully uploaded and synchronized on Supabase!");
-                } else {
-                    alert("Upload failed. Verify database connectivity.");
-                }
-            } catch (err) {
-                alert("Error during sync push.");
-            }
-            renderSyncModalContent();
-        };
-
-        document.getElementById('logoutBtn').onclick = async () => {
-            if (confirm("Log out of Apollo Sync? This will clear your current local session cache and reset local values to samples.")) {
-                try {
-                    await supabase.auth.signOut();
-                    window.ApolloStorage.resetAll();
-                    closeSyncModal();
-                } catch (err) {
-                    alert("Error signing out.");
-                }
-            }
-        };
     }
 
     // Connect trigger button listener when Document is fully loaded
@@ -973,6 +961,14 @@ CREATE POLICY "Owner update" ON apollo_user_data
         const syncBtn = document.getElementById('syncBtn');
         if (syncBtn) {
             syncBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openSyncModal();
+            });
+        }
+
+        const mobileSettingsBtn = document.getElementById('mobileSettingsBtn');
+        if (mobileSettingsBtn) {
+            mobileSettingsBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 openSyncModal();
             });

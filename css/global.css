@@ -305,6 +305,11 @@ body {
     background: var(--text-light);
 }
 
+/* Hide mobile setting nav link on desktop */
+.nav-settings {
+    display: none !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 900px) {
     .sidebar {
@@ -387,6 +392,10 @@ body {
 
     .nav-link span {
         display: block !important;
+    }
+
+    .nav-settings {
+        display: flex !important;
     }
 
     .nav-link svg {
