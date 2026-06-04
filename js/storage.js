@@ -511,8 +511,10 @@
                     return false;
                 }
 
-                // If user doesn't have a remote record yet, seed the database with current local storage data
+                // If user doesn't have a remote record yet, start them with a clean, empty workspace (no example tasks/goals/reminders)
                 if (!data) {
+                    console.log("[Apollo Sync] First-time sign in detected. Initializing a clean blank workspace...");
+                    seedDefaultData();
                     this.pushToCloud(user).catch(e => console.error("Initial seed push failed:", e));
                     return true;
                 }
