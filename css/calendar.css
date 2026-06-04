@@ -1,0 +1,360 @@
+/* Apollo Calendar Dashboard Stylesheet */
+
+.calendar-workspace {
+    display: grid;
+    grid-template-columns: minmax(auto, 520px) 360px;
+    gap: 2.5rem;
+    align-items: start;
+}
+
+@media (max-width: 1000px) {
+    .calendar-workspace {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Calendar Card panel */
+.calendar-panel-card, .schedule-drawer-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+}
+
+.calendar-panel-card {
+    padding: 2rem;
+    max-width: 520px;
+    width: 100%;
+}
+
+.schedule-drawer-card {
+    padding: 2rem 1.5rem;
+}
+
+.calendar-navigator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.calendar-navigator-header h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.month-arrow-controls {
+    display: flex;
+    gap: 0.25rem;
+}
+
+/* Calendar Month Grid Structure */
+.weekdays-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.65rem;
+}
+
+.calendar-day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-main);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    transition: var(--transition);
+}
+
+.calendar-day-cell:hover:not(.empty-cell) {
+    background-color: var(--border-light);
+}
+
+/* Out-of-month day blocks */
+.calendar-day-cell.other-month {
+    color: var(--text-light);
+    opacity: 0.35;
+}
+
+/* Active and Today states */
+.calendar-day-cell.today {
+    color: var(--accent);
+    font-weight: 700;
+    border: 1.5px solid var(--accent);
+}
+
+.calendar-day-cell.selected {
+    background-color: var(--text-main) !important;
+    color: #ffffff !important;
+}
+
+.calendar-day-cell.selected.today {
+    border-color: var(--accent);
+    background-color: var(--text-main) !important;
+}
+
+/* Markers indicator dots */
+.cell-markers {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    position: absolute;
+    bottom: 6px;
+    width: 100%;
+}
+
+.marker-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+}
+
+.marker-dot.reminder {
+    background-color: var(--prio-normal-dot);
+}
+
+.marker-dot.logs {
+    background-color: var(--prio-high-dot);
+}
+
+.calendar-day-cell.selected .marker-dot.reminder {
+    background-color: #ffffff;
+}
+
+.calendar-day-cell.selected .marker-dot.logs {
+    background-color: #ffffff;
+}
+
+/* Schedule side drawer segment */
+.drawer-header-bar {
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.drawer-header-bar h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.drawer-header-bar p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.drawer-section {
+    margin-bottom: 2rem;
+}
+
+.drawer-section h4 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-light);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+/* Lists and forms styling inside drawer */
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.schedule-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--border-light);
+    transition: var(--transition);
+}
+
+.schedule-item-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.schedule-item-title {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.schedule-item-note {
+    font-size: 0.725rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.schedule-item-time {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent);
+    background-color: var(--accent-soft);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.schedule-item-del-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    transition: var(--transition);
+    padding: 0.15rem;
+}
+
+.schedule-item-del-btn:hover {
+    color: #ef4444;
+}
+
+/* Forms inside Drawer */
+.drawer-mini-form {
+    border-top: 1px dashed var(--border-color);
+    padding-top: 1.25rem;
+    margin-top: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.form-row-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 0.75rem;
+}
+
+.add-input-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    width: 100%;
+}
+
+.add-input-row .input-field {
+    flex-grow: 1;
+}
+
+.drawer-mini-form .input-field {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+}
+
+/* Cross-browser normalization for time inputs in the form */
+.drawer-mini-form input[type="time"] {
+    font-family: inherit;
+    line-height: 1;
+    padding: 0.5rem 0.4rem; /* reduced horizontal padding to make space for browser-native controls */
+}
+
+.drawer-mini-form .primary-btn {
+    height: 40px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mini-add-btn {
+    height: 40px;
+    font-size: 0.85rem;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    border-radius: var(--radius-md);
+}
+
+.schedule-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.schedule-item-edit-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    padding: 0.15rem;
+}
+
+.schedule-item-edit-btn:hover {
+    color: var(--accent);
+}
+
+@media (max-width: 600px) {
+    .calendar-panel-card {
+        padding: 1.25rem !important;
+    }
+    
+    .schedule-drawer-card {
+        padding: 1.25rem !important;
+    }
+
+    .days-grid {
+        gap: 0.35rem !important;
+    }
+
+    .calendar-day-cell {
+        font-size: 0.8rem !important;
+    }
+
+    .cell-markers {
+        bottom: 3px !important;
+    }
+
+    .form-row-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+}

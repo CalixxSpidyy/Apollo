@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apollo — Daily Logs</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/logs.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-container">
+                <svg class="brand-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13H5.5L12 6.5z"/>
+                </svg>
+                <h1 class="brand-name">Apollo<span>.</span></h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link active" title="Daily Logs">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Logs</span>
+                </a>
+                <a href="goals.html" class="nav-link" title="Goals">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Goals</span>
+                </a>
+                <a href="calendar.html" class="nav-link" title="Calendar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Calendar</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="secondary-btn-sidebar" id="syncBtn" title="Cloud Sync Settings" style="color: var(--accent); border-color: rgba(249,115,22,0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;">
+                        <path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <span>Cloud Sync</span>
+                </button>
+                <button class="secondary-btn-sidebar" id="exportBtn" title="Export All Data">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <span>Export</span>
+                </button>
+                <button class="secondary-btn-sidebar" id="resetBtn" title="Reset All Data" style="color:#ef4444; border-color: rgba(239,68,68,0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;">
+                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <span>Reset</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header bar with search and date controls -->
+            <header class="view-header">
+                <div class="view-title-group">
+                    <h2 id="dayTitle">Day #------</h2>
+                    <p id="dayDate">...</p>
+                </div>
+                
+                <div class="header-controls">
+                    <!-- Date navigation -->
+                    <div class="date-navigator">
+                        <button id="prevDayBtn" class="nav-arrow-btn" title="Previous Day">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                        </button>
+                        <button id="todayBtn" class="today-tag" style="display:none;">Today</button>
+                        <button id="nextDayBtn" class="nav-arrow-btn" title="Next Day">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Search panel -->
+                    <div class="search-container">
+                        <div class="search-input-wrapper">
+                            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                            <input type="text" id="logSearchInput" placeholder="Search logs..." class="input-field">
+                        </div>
+                        <!-- Dropdown of matching items -->
+                        <div id="searchResults" class="search-results-dropdown" style="display:none;"></div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="logs-layout-grid">
+                <!-- Left Pane: Tasks and Editor -->
+                <div class="primary-pane">
+                    <!-- Task Add Section -->
+                    <section class="task-add-card">
+                        <div class="add-input-row">
+                            <input type="text" id="taskInput" placeholder="Add a new task..." class="input-field" aria-label="New task title">
+                            <select id="goalTagSelect" class="input-field" aria-label="Tag a Goal">
+                                <option value="">Tag Goal (None)</option>
+                            </select>
+                            <button id="addTaskBtn" class="primary-btn" disabled>Add</button>
+                        </div>
+                    </section>
+
+                    <!-- Todo Checklist -->
+                    <section class="checklist-section">
+                        <div class="section-title-bar">
+                            <h3>Todo List</h3>
+                            <span style="font-size:0.75rem; color: var(--text-light);">Double-click text to edit</span>
+                        </div>
+                        <div id="todoList" class="todo-list"></div>
+                    </section>
+
+                    <!-- Rich Text Journal Note Section -->
+                    <section class="journal-section">
+                        <div class="section-title-bar">
+                            <h3>Journal Entry</h3>
+                            <!-- WYSIWYG editor controls -->
+                            <div class="editor-toolbar" id="editorToolbar">
+                                <button type="button" class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+                                <button type="button" class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+                                <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List">•</button>
+                            </div>
+                        </div>
+                        <div id="journalEditor" contenteditable="true" class="journal-editor" data-placeholder="Capture your ideas, thoughts, and reflections here..."></div>
+                        <div class="editor-status-bar">
+                            <span id="saveStatus">All changes saved</span>
+                            <div class="editor-action-buttons">
+                                <button id="cancelJournalBtn" class="secondary-btn mini-btn" disabled>Cancel</button>
+                                <button id="saveJournalBtn" class="primary-btn mini-btn" disabled>Save Journal</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Pane: Recents Sidebar -->
+                <div class="recents-pane">
+                    <div class="section-title-bar">
+                        <h3>Recent Logs</h3>
+                    </div>
+                    <div id="recentsGrid" class="recents-list"></div>
+                    <div id="paginationControls" class="pagination-bar"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Interactive Popovers / Modals (Dynamic) -->
+    <div id="popoverContainer" class="popover-container"></div>
+
+    <!-- JS Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/logs.js"></script>
+</body>
+</html>

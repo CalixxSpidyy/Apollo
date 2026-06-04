@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apollo — Goals</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/goals.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-container">
+                <svg class="brand-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13H5.5L12 6.5z"/>
+                </svg>
+                <h1 class="brand-name">Apollo<span>.</span></h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link" title="Daily Logs">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Logs</span>
+                </a>
+                <a href="goals.html" class="nav-link active" title="Goals">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Goals</span>
+                </a>
+                <a href="calendar.html" class="nav-link" title="Calendar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Calendar</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="secondary-btn-sidebar" id="syncBtn" title="Cloud Sync Settings" style="color: var(--accent); border-color: rgba(249,115,22,0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;">
+                        <path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <span>Cloud Sync</span>
+                </button>
+                <button class="secondary-btn-sidebar" id="exportBtn" title="Export All Data">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <span>Export</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Workspace -->
+        <main class="main-content">
+            <header class="view-header">
+                <div class="view-title-group">
+                    <h2>Goals Dashboard</h2>
+                    <p>Track targets over days, weeks, and months</p>
+                </div>
+                
+                <div class="header-actions">
+                    <button id="openNewGoalModalBtn" class="primary-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                        Create Goal
+                    </button>
+                </div>
+            </header>
+
+            <!-- Active vs Completed Tabs -->
+            <div class="filter-tabs-container">
+                <div class="filter-tabs">
+                    <button class="tab-btn active" data-filter="active">Active</button>
+                    <button class="tab-btn" data-filter="completed">Completed</button>
+                    <button class="tab-btn" data-filter="all">All Goals</button>
+                </div>
+            </div>
+
+            <!-- Goals Cards Grid -->
+            <div id="goalsGrid" class="goals-grid"></div>
+        </main>
+    </div>
+
+    <!-- Create Goal Overlay Modal -->
+    <div id="goalModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>New Goal</h3>
+                <button id="closeModalBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="goalForm">
+                    <div class="form-group">
+                        <input type="text" id="goalNameInput" placeholder="What is your goal?" class="input-field" required>
+                    </div>
+
+                    <div class="form-row-grid">
+                        <div class="form-group">
+                            <label for="goalPeriodSelect">Period</label>
+                            <select id="goalPeriodSelect" class="input-field">
+                                <option value="day">One Day</option>
+                                <option value="week">One Week</option>
+                                <option value="month">One Month</option>
+                                <option value="custom">Custom Period</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goalTypeSelect">Goal Type</label>
+                            <select id="goalTypeSelect" class="input-field">
+                                <option value="progress-based">Progress-based (Time)</option>
+                                <option value="one-time">One-time Task</option>
+                                <option value="repeat">Repeat (Interval)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Date Selector Calendar -->
+                    <div class="form-group" id="datePickerGroup" style="position: relative;">
+                        <label id="datePickerLabel" for="goalDateTrigger">Target Date</label>
+                        <div id="goalDateTrigger" class="input-field date-trigger-field" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+                            <span id="goalDateDisplay">Select Date...</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px; height:16px; color:var(--text-light);"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                        </div>
+                        
+                        <!-- The Floating Dropdown Calendar -->
+                        <div id="datePickerDropdown" class="date-picker-dropdown" style="display: none;">
+                            <div class="dp-header">
+                                <button type="button" id="dpPrevMonth" class="dp-nav-btn">&larr;</button>
+                                <span id="dpMonthYear">June 2026</span>
+                                <button type="button" id="dpNextMonth" class="dp-nav-btn">&rarr;</button>
+                            </div>
+                            <div class="dp-weekdays">
+                                <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
+                            </div>
+                            <div id="dpDaysGrid" class="dp-days-grid"></div>
+                        </div>
+                    </div>
+
+                    <!-- Contextual Parameter: Progress Target Time -->
+                    <div id="progressParams" class="form-group-params">
+                        <label>Target Time</label>
+                        <div class="target-time-inputs">
+                            <input type="number" id="targetHrs" class="input-field" placeholder="Hours" min="0">
+                            <span>hrs</span>
+                            <input type="number" id="targetMins" class="input-field" placeholder="Minutes" min="0" max="59">
+                            <span>mins</span>
+                        </div>
+                    </div>
+
+                    <!-- Contextual Parameter: Repeat interval -->
+                    <div id="repeatParams" class="form-group-params" style="display:none;">
+                        <label for="repeatIntervalInput">Set Repeat Interval</label>
+                        <div class="interval-inputs">
+                            <span>Every</span>
+                            <input type="number" id="repeatIntervalInput" class="input-field" value="1" min="1" style="width:70px;">
+                            <span>days</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" id="cancelGoalBtn" class="secondary-btn-sidebar">Cancel</button>
+                        <button type="submit" class="primary-btn">Create Goal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/goals.js"></script>
+</body>
+</html>

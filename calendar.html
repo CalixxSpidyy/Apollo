@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apollo — Calendar</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/calendar.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-container">
+                <svg class="brand-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13H5.5L12 6.5z"/>
+                </svg>
+                <h1 class="brand-name">Apollo<span>.</span></h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link" title="Daily Logs">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Logs</span>
+                </a>
+                <a href="goals.html" class="nav-link" title="Goals">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Goals</span>
+                </a>
+                <a href="calendar.html" class="nav-link active" title="Calendar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Calendar</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="secondary-btn-sidebar" id="syncBtn" title="Cloud Sync Settings" style="color: var(--accent); border-color: rgba(249,115,22,0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;">
+                        <path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <span>Cloud Sync</span>
+                </button>
+                <button class="secondary-btn-sidebar" id="exportBtn" title="Export All Data">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <span>Export</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Workspace -->
+        <main class="main-content">
+            <header class="view-header">
+                <div class="view-title-group">
+                    <h2>Calendar View</h2>
+                    <p>Add reminders and plant todo tasks in advance</p>
+                </div>
+            </header>
+
+            <div class="calendar-workspace">
+                <!-- Left Grid Segment: Interactive Calendar -->
+                <div class="calendar-panel-card">
+                    <div class="calendar-navigator-header">
+                        <h3 id="currentMonthYear">June 2026</h3>
+                        <div class="month-arrow-controls">
+                            <button id="prevMonthBtn" class="nav-arrow-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                            </button>
+                            <button id="nextMonthBtn" class="nav-arrow-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Weekdays names -->
+                    <div class="weekdays-grid">
+                        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+                    </div>
+                    
+                    <!-- Days Grid container -->
+                    <div id="calendarDaysGrid" class="days-grid"></div>
+                </div>
+
+                <!-- Right Segment Drawer: Reminders and Advance Todos -->
+                <div class="schedule-drawer-card">
+                    <div class="drawer-header-bar">
+                        <h3 id="selectedDateTitle">Schedule</h3>
+                        <p id="selectedDateSubtitle">Select a date from calendar</p>
+                    </div>
+
+                    <!-- Part A: Reminders -->
+                    <section class="drawer-section">
+                        <h4>Reminders</h4>
+                        <div id="drawerRemindersList" class="schedule-list"></div>
+                        
+                        <form id="reminderForm" class="drawer-mini-form">
+                            <input type="text" id="remTitleInput" placeholder="Add a reminder title..." class="input-field" required>
+                            <div class="form-row-grid">
+                                <input type="text" id="remNoteInput" placeholder="Note (optional)" class="input-field">
+                                <input type="time" id="remTimeInput" class="input-field">
+                            </div>
+                            <button type="submit" class="primary-btn mini-add-btn">Add Reminder</button>
+                        </form>
+                    </section>
+
+                    <!-- Part B: Advance Todos -->
+                    <section class="drawer-section">
+                        <h4>Advance Todos</h4>
+                        <div id="drawerTodosList" class="schedule-list"></div>
+                        
+                        <div id="advTodoForm" class="drawer-mini-form">
+                            <div class="add-input-row">
+                                <input type="text" id="advTodoInput" placeholder="Add a task in advance..." class="input-field">
+                                <button id="addAdvTodoBtn" class="primary-btn" disabled>Add Task</button>
+                            </div>
+                        </div>
+
+                        <div id="pastDateBlocker" style="display:none; text-align:center; padding:1rem; color:var(--text-muted); font-size:0.85rem; border:1px dashed var(--border-color); border-radius:var(--radius-md); margin-top:1rem; background-color:var(--border-light);">
+                            <span>Past dates cannot be modified.</span>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/calendar.js"></script>
+</body>
+</html>

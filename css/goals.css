@@ -1,0 +1,523 @@
+/* Apollo Goals Dashboard Stylesheet */
+
+.filter-tabs-container {
+    margin-bottom: 2.25rem;
+}
+
+.filter-tabs {
+    display: inline-flex;
+    background-color: var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 0.25rem;
+}
+
+.tab-btn {
+    border: none;
+    background: transparent;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-radius: calc(var(--radius-md) - 2px);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tab-btn:hover {
+    color: var(--text-main);
+}
+
+.tab-btn.active {
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Goals Cards Grid */
+.goals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+}
+
+.goal-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: var(--transition);
+}
+
+.goal-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--text-light);
+}
+
+.goal-card.completed {
+    border-color: var(--prio-high-border);
+    background-color: var(--prio-high-bg);
+}
+
+.goal-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+}
+
+.goal-period-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background-color: var(--border-light);
+    color: var(--text-muted);
+}
+
+.goal-card.completed .goal-period-badge {
+    background-color: #ffffff;
+    color: var(--prio-high-text);
+}
+
+.goal-delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 0.25rem;
+}
+
+.goal-delete-btn:hover {
+    color: #ef4444;
+}
+
+.goal-delete-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.goal-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 0.25rem;
+}
+
+.goal-meta-details {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+/* Progress-based Goal Elements */
+.goal-progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.goal-progress-wire {
+    height: 6px;
+    background-color: var(--border-light);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.goal-progress-fill {
+    height: 100%;
+    background-color: var(--accent);
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.goal-card.completed .goal-progress-fill {
+    background-color: var(--prio-high-dot);
+}
+
+/* Inline Logger Form on Card */
+.goal-card-logger {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.goal-card.completed .goal-card-logger {
+    display: none;
+}
+
+.logger-row {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.logger-row input {
+    height: 32px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+.logger-row .primary-btn {
+    height: 32px;
+    padding: 0 0.75rem;
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+}
+
+/* Collapsible Details/History */
+.goal-history-details {
+    margin-top: 0.75rem;
+}
+
+.goal-history-details summary {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+.history-list {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.history-item {
+    font-size: 0.725rem;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.35rem;
+    border-radius: 4px;
+    background-color: var(--border-light);
+}
+
+.history-item-del-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+.history-item-del-btn:hover {
+    color: #ef4444;
+}
+
+/* Dialog Overlay and Card Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.2);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 460px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02);
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: var(--transition);
+}
+
+.close-btn:hover {
+    color: var(--text-main);
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.form-group-params {
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+    background-color: var(--border-light);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-group-params label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.form-row-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-group .input-field {
+    width: 100%;
+}
+
+.target-time-inputs, .interval-inputs {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.target-time-inputs input {
+    width: 90px;
+}
+
+.target-time-inputs span, .interval-inputs span {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+}
+
+/* Custom Date Picker Dropdown */
+.date-trigger-field {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+    height: 40px;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.date-trigger-field:hover {
+    border-color: var(--text-light);
+}
+
+.date-picker-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 280px;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    padding: 0.75rem;
+    z-index: 1100;
+}
+
+.dp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.dp-header span {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.dp-nav-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.dp-nav-btn:hover {
+    background-color: var(--border-light);
+    color: var(--text-main);
+}
+
+.dp-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.dp-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.dp-day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.1s;
+    user-select: none;
+    position: relative;
+}
+
+.dp-day-cell:hover:not(.other-month) {
+    background-color: var(--border-light);
+}
+
+.dp-day-cell.other-month {
+    color: var(--text-light);
+    opacity: 0.25;
+}
+
+/* Highlights */
+.dp-day-cell.week-highlight {
+    background-color: var(--accent-soft) !important;
+    color: var(--accent) !important;
+    border-radius: 0;
+}
+
+.dp-day-cell.week-highlight:nth-of-type(7n+1) {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+.dp-day-cell.week-highlight:nth-of-type(7n) {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.dp-day-cell.month-highlight {
+    background-color: var(--accent-soft) !important;
+    color: var(--accent) !important;
+    border-radius: 0;
+}
+
+.dp-day-cell.range-highlight {
+    background-color: var(--accent-soft) !important;
+    color: var(--accent) !important;
+    border-radius: 0;
+}
+
+.dp-day-cell.selected-day, .dp-day-cell.range-endpoint {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+    border-radius: 4px !important;
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+    .filter-tabs-container {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 0.25rem;
+    }
+
+    .goals-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+
+    .goal-card {
+        padding: 1.25rem !important;
+    }
+
+    .modal-card {
+        width: calc(100% - 2rem) !important;
+        margin: 1rem !important;
+    }
+
+    .modal-body {
+        padding: 1.25rem !important;
+    }
+
+    .modal-header {
+        padding: 1rem 1.25rem !important;
+    }
+
+    .form-row-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+    }
+
+    .modal-footer button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Center floating date-picker calendar dropdown in modal on mobile */
+    .date-picker-dropdown {
+        width: 100% !important;
+        max-width: 280px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+    }
+}
