@@ -11,8 +11,63 @@
 
     let supabase = null;
 
+    // Global visual error logger to debug any uncaught runtime errors directly inside the shield
+    window.addEventListener('error', (event) => {
+        const shield = document.getElementById('authShield');
+        if (shield) {
+            const card = shield.querySelector('.auth-shield-card');
+            if (card) {
+                let errDiv = document.getElementById('runtimeErrorDisplay');
+                if (!errDiv) {
+                    errDiv = document.createElement('div');
+                    errDiv.id = 'runtimeErrorDisplay';
+                    errDiv.style.color = '#ef4444';
+                    errDiv.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                    errDiv.style.border = '1px solid #ef4444';
+                    errDiv.style.padding = '10px';
+                    errDiv.style.marginTop = '15px';
+                    errDiv.style.borderRadius = '6px';
+                    errDiv.style.fontSize = '0.75rem';
+                    errDiv.style.textAlign = 'left';
+                    errDiv.style.maxHeight = '200px';
+                    errDiv.style.overflow = 'auto';
+                    errDiv.style.wordBreak = 'break-all';
+                    card.appendChild(errDiv);
+                }
+                errDiv.innerHTML += `<div><strong>Error:</strong> ${event.message} <br><small>at ${event.filename}:${event.lineno}</small></div>`;
+            }
+        }
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        const shield = document.getElementById('authShield');
+        if (shield) {
+            const card = shield.querySelector('.auth-shield-card');
+            if (card) {
+                let errDiv = document.getElementById('runtimeErrorDisplay');
+                if (!errDiv) {
+                    errDiv = document.createElement('div');
+                    errDiv.id = 'runtimeErrorDisplay';
+                    errDiv.style.color = '#ef4444';
+                    errDiv.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                    errDiv.style.border = '1px solid #ef4444';
+                    errDiv.style.padding = '10px';
+                    errDiv.style.marginTop = '15px';
+                    errDiv.style.borderRadius = '6px';
+                    errDiv.style.fontSize = '0.75rem';
+                    errDiv.style.textAlign = 'left';
+                    errDiv.style.maxHeight = '200px';
+                    errDiv.style.overflow = 'auto';
+                    errDiv.style.wordBreak = 'break-all';
+                    card.appendChild(errDiv);
+                }
+                errDiv.innerHTML += `<div><strong>Promise Rejected:</strong> ${event.reason?.message || event.reason}</div>`;
+            }
+        }
+    });
+
     // Initialize Supabase Client & Register Auth State Listeners
-    function initSupabase() {
+    function initSupabase(force = false) {
         let url = window.ApolloConfig?.supabaseUrl;
         let key = window.ApolloConfig?.supabaseKey;
 
@@ -22,23 +77,140 @@
             key = localStorage.getItem(STORAGE_KEYS.SUPABASE_KEY);
         }
 
+        // If client is already initialized and credentials didn't change, do not re-initialize
+        if (supabase && supabase.supabaseUrl === url && !force) {
+            return;
+        }
+
         if (url && key && window.supabase) {
             try {
                 supabase = window.supabase.createClient(url, key);
                 
-                // Track real-time Auth state shifts (especially successful redirect callbacks)
-                supabase.auth.onAuthStateChange(async (event, session) => {
-                    if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session) {
-                        // Background download on successful login/callback (forced pull to prevent empty seed overrides)
-                        await window.ApolloStorage.pullFromCloud(true);
-                        
-                        // Refresh the Sync Control Panel UI if currently open
-                        const container = document.getElementById('syncModalOverlay');
-                        if (container && container.style.display === 'flex') {
-                            renderSyncModalContent();
+                let initialCheckDone = false;
+
+                async function handleSession(event, session) {
+                    console.log("[Apollo Auth] Handling session state:", event, "Session exists:", !!session);
+                    const shield = document.getElementById('authShield');
+                    const subtitle = shield ? shield.querySelector('.auth-shield-subtitle') : null;
+                    
+                    if (subtitle) {
+                        subtitle.textContent = event ? `Verifying session: ${event}...` : "Verifying session...";
+                    }
+
+                    try {
+                        if (session) {
+                            localStorage.setItem('apollo_auth_active', 'true');
+                            
+                            // Check if we have warm local cache data
+                            const hasWarmCache = !!localStorage.getItem(STORAGE_KEYS.LAST_UPDATED);
+                            
+                            if (hasWarmCache) {
+                                console.log("[Apollo Auth] Warm cache found. Instant-launching UI and syncing in background...");
+                                if (subtitle) {
+                                    subtitle.textContent = "Workspace loaded! Launching Apollo...";
+                                }
+                                
+                                // Smoothly dismiss the shield immediately (0ms blocking)
+                                if (shield) {
+                                    shield.style.opacity = '0';
+                                    shield.style.transition = 'opacity 0.2s ease';
+                                    setTimeout(() => {
+                                        shield.remove();
+                                    }, 200);
+                                }
+                                
+                                // Perform the cloud pull asynchronously in the background
+                                window.ApolloStorage.pullFromCloud(session.user).then(pullOk => {
+                                    console.log("[Apollo Auth] Background cloud synchronization result:", pullOk);
+                                    // Refresh the Sync Control Panel UI if currently open
+                                    const container = document.getElementById('syncModalOverlay');
+                                    if (container && container.style.display === 'flex') {
+                                        renderSyncModalContent();
+                                    }
+                                }).catch(err => {
+                                    console.error("[Apollo Auth] Background sync error:", err);
+                                });
+                            } else {
+                                // Cold start / No local cache: Block and wait for initial pull to avoid blank seeds
+                                console.log("[Apollo Auth] Cold start (no cache). Blocking until cloud sync completes...");
+                                if (subtitle) {
+                                    subtitle.textContent = "Synchronizing cloud workspace...";
+                                }
+                                
+                                const pullOk = await window.ApolloStorage.pullFromCloud(session.user);
+                                console.log("[Apollo Auth] Cold start cloud sync result:", pullOk);
+                                
+                                if (subtitle) {
+                                    subtitle.textContent = pullOk ? "Workspace loaded! Launching Apollo..." : "Connection warning: Loading cache...";
+                                }
+                                
+                                if (shield) {
+                                    shield.style.opacity = '0';
+                                    shield.style.transition = 'opacity 0.3s ease';
+                                    setTimeout(() => {
+                                        shield.remove();
+                                    }, 300);
+                                }
+                                
+                                // Refresh the Sync Control Panel UI if currently open
+                                const container = document.getElementById('syncModalOverlay');
+                                if (container && container.style.display === 'flex') {
+                                    renderSyncModalContent();
+                                }
+                            }
+                        } else {
+                            console.log("[Apollo Auth] No active session. Rendering login UI.");
+                            localStorage.removeItem('apollo_auth_active');
+                            if (subtitle) {
+                                subtitle.textContent = "Ready for login.";
+                            }
+                            // Not logged in! If the shield is already showing, render the login card.
+                            if (shield) {
+                                shield.style.display = 'flex'; // Ensure visible
+                                renderShieldLogin(shield);
+                            } else {
+                                enforceMandatoryAuth();
+                            }
+                        }
+                    } catch (err) {
+                        console.error("[Apollo Auth] State transition failed:", err);
+                        if (subtitle) {
+                            subtitle.textContent = `Error: ${err.message || err}`;
+                        }
+                        if (shield) {
+                            shield.style.display = 'flex'; // Ensure visible
+                            renderShieldLogin(shield);
                         }
                     }
+                }
+
+                // Track real-time Auth state shifts (especially successful redirect callbacks)
+                supabase.auth.onAuthStateChange(async (event, session) => {
+                    if (event === 'INITIAL_SESSION' && initialCheckDone) {
+                        console.log("[Apollo Auth] Ignoring duplicate INITIAL_SESSION event");
+                        return;
+                    }
+                    initialCheckDone = true;
+                    await handleSession(event, session);
                 });
+
+                // Explicitly check current session immediately to bypass any asynchronous delay/hang in onAuthStateChange
+                (async () => {
+                    try {
+                        console.log("[Apollo Auth] Checking session explicitly...");
+                        const { data: { session }, error } = await supabase.auth.getSession();
+                        if (error) throw error;
+                        
+                        if (!initialCheckDone) {
+                            console.log("[Apollo Auth] Explicit session check resolved first:", !!session);
+                            initialCheckDone = true;
+                            await handleSession(session ? 'SIGNED_IN' : 'SIGNED_OUT', session);
+                        }
+                    } catch (err) {
+                        console.warn("[Apollo Auth] Explicit session check failed, relying on onAuthStateChange:", err);
+                    }
+                })();
+
             } catch (e) {
                 console.error("Failed to initialize Supabase client:", e);
                 supabase = null;
@@ -122,8 +294,7 @@
         cleanupEmptyLogs();
     }
 
-    // Initialize Supabase Client immediately on script load
-    initSupabase();
+
 
     // State Management API
     window.ApolloStorage = {
@@ -274,10 +445,10 @@
         },
 
         // Push current local state directly to Supabase
-        async pushToCloud() {
+        async pushToCloud(passedUser = null) {
             if (!supabase) return false;
             try {
-                const user = await this.getLoggedInUser();
+                const user = passedUser || await this.getLoggedInUser();
                 if (!user) return false;
 
                 const logs = this.getLogs();
@@ -307,26 +478,42 @@
         },
 
         // Pull latest state from Supabase and overwrite local cache (Sovereign Cloud Source of Truth)
-        async pullFromCloud() {
+        async pullFromCloud(passedUser = null) {
             if (!supabase) return false;
             try {
-                const user = await this.getLoggedInUser();
+                const user = passedUser || await this.getLoggedInUser();
                 if (!user) return false;
 
-                const { data, error } = await supabase
-                    .from('apollo_user_data')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
+                // Create a timeout promise to prevent network query hangs
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Database fetch timeout (5s)")), 5000)
+                );
 
-                if (error) {
-                    console.error("Cloud pull failed:", error);
+                const selectPromise = (async () => {
+                    const { data, error } = await supabase
+                        .from('apollo_user_data')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+
+                    if (error) {
+                        throw error;
+                    }
+                    return data;
+                })();
+
+                // Race the database select against the 5-second timeout
+                let data;
+                try {
+                    data = await Promise.race([selectPromise, timeoutPromise]);
+                } catch (raceErr) {
+                    console.error("[Apollo Sync] Cloud pull failed or timed out:", raceErr);
                     return false;
                 }
 
                 // If user doesn't have a remote record yet, seed the database with current local storage data
                 if (!data) {
-                    await this.pushToCloud();
+                    this.pushToCloud(user).catch(e => console.error("Initial seed push failed:", e));
                     return true;
                 }
 
@@ -349,6 +536,9 @@
             this.pushToCloud().catch(err => console.warn("Background upload failed:", err));
         }
     };
+
+    // Synchronously enforce the mandatory auth shield to cover the page and setup reactive listener
+    enforceMandatoryAuth();
 
     // Auto sync check is handled by enforceMandatoryAuth() on startup.
 
@@ -703,7 +893,7 @@ CREATE POLICY "Owner update" ON apollo_user_data
                         try {
                             localStorage.setItem(STORAGE_KEYS.SUPABASE_URL, url);
                             localStorage.setItem(STORAGE_KEYS.SUPABASE_KEY, key);
-                            initSupabase();
+                            initSupabase(true);
 
                             if (window.ApolloStorage.isSupabaseConnected()) {
                                 renderSyncModalContent();
@@ -765,7 +955,7 @@ CREATE POLICY "Owner update" ON apollo_user_data
                     if (confirm("Disconnect and reset your Supabase project keys?")) {
                         localStorage.removeItem(STORAGE_KEYS.SUPABASE_URL);
                         localStorage.removeItem(STORAGE_KEYS.SUPABASE_KEY);
-                        initSupabase();
+                        initSupabase(true);
                         renderSyncModalContent();
                     }
                 };
@@ -953,8 +1143,6 @@ CREATE POLICY "Owner update" ON apollo_user_data
         }
     }
 
-    }
-
     // --- MANDATORY AUTH PROTECTION SHIELD (CLOUD-FIRST SOVEREIGN SECURITY) ---
 
     function injectShieldStyles() {
@@ -1139,6 +1327,11 @@ CREATE POLICY "Owner update" ON apollo_user_data
     }
 
     async function enforceMandatoryAuth() {
+        // Fast-path: if we have a recorded active auth session and local cache,
+        // do not block the page with a loader shield to allow instant navigation.
+        const isAuthActive = localStorage.getItem('apollo_auth_active') === 'true';
+        const hasWarmCache = !!localStorage.getItem(STORAGE_KEYS.LAST_UPDATED);
+        
         let shield = document.getElementById('authShield');
         if (!shield) {
             shield = document.createElement('div');
@@ -1146,6 +1339,11 @@ CREATE POLICY "Owner update" ON apollo_user_data
             shield.className = 'auth-shield';
             
             injectShieldStyles();
+            
+            // If fast-path is active, make the shield invisible so there is zero UI blocking/flash
+            if (isAuthActive && hasWarmCache) {
+                shield.style.display = 'none';
+            }
             
             shield.innerHTML = `
                 <div class="auth-shield-card">
@@ -1165,28 +1363,9 @@ CREATE POLICY "Owner update" ON apollo_user_data
         }
 
         if (!supabase) {
+            shield.style.display = 'flex'; // Ensure visible!
             renderShieldSetup(shield);
             return;
-        }
-
-        try {
-            const user = await window.ApolloStorage.getLoggedInUser();
-            if (user) {
-                // Pull cloud data first (Sovereign master source)
-                await window.ApolloStorage.pullFromCloud();
-                
-                // Fade out and dismiss shield
-                shield.style.opacity = '0';
-                shield.style.transition = 'opacity 0.4s ease';
-                setTimeout(() => {
-                    shield.remove();
-                }, 400);
-            } else {
-                renderShieldLogin(shield);
-            }
-        } catch (e) {
-            console.error("Enforce auth failed:", e);
-            renderShieldLogin(shield);
         }
     }
 
@@ -1212,10 +1391,8 @@ CREATE POLICY "Owner update" ON apollo_user_data
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             bootstrapSyncUI();
-            enforceMandatoryAuth();
         });
     } else {
         bootstrapSyncUI();
-        enforceMandatoryAuth();
     }
 })();

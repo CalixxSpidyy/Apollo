@@ -448,8 +448,9 @@
                     <!-- Inline Session logger on Goal Card -->
                     <div class="goal-card-logger">
                         <div class="logger-row">
-                            <input type="text" id="note-${goal.id}" placeholder="Session note..." class="input-field" style="flex-grow:1;">
-                            <input type="number" id="mins-${goal.id}" placeholder="Mins" class="input-field" style="width:65px;" min="1">
+                            <input type="text" id="note-${goal.id}" placeholder="Session note..." class="input-field" style="flex-grow:1; min-width: 0;">
+                            <input type="number" id="hrs-${goal.id}" placeholder="Hrs" class="input-field" style="width:52px;" min="0" step="any">
+                            <input type="number" id="mins-${goal.id}" placeholder="Mins" class="input-field" style="width:52px;" min="0" step="any">
                             <button class="primary-btn log-progress-btn" data-id="${goal.id}">Log</button>
                         </div>
                     </div>
@@ -594,14 +595,27 @@
 
     // Inline Session additions directly in goal card
     function logSessionTime(goalId) {
+        const hrsInput = document.getElementById(`hrs-${goalId}`);
         const minsInput = document.getElementById(`mins-${goalId}`);
         const noteInput = document.getElementById(`note-${goalId}`);
         
-        const minutes = Number(minsInput.value) || 0;
+        const hours = Number(hrsInput.value) || 0;
+        const mins = Number(minsInput.value) || 0;
         const note = noteInput.value.trim() || 'Logged Session';
 
+        if (hours < 0 || mins < 0) {
+            alert("Please enter positive values.");
+            return;
+        }
+
+        if (hours === 0 && mins === 0) {
+            alert("Please enter hours or minutes spent.");
+            return;
+        }
+
+        const minutes = Math.round(hours * 60) + mins;
         if (minutes <= 0) {
-            alert("Please enter minutes spent.");
+            alert("Please enter a valid amount of time.");
             return;
         }
 
