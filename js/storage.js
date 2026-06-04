@@ -350,10 +350,7 @@
         }
     };
 
-    // Auto sync check on startup
-    setTimeout(() => {
-        window.ApolloStorage.pullFromCloud().catch(() => {});
-    }, 1000);
+    // Auto sync check is handled by enforceMandatoryAuth() on startup.
 
     // --- INTERACTIVE SWISS CONFIG MODAL ENGINE ---
 
@@ -956,6 +953,243 @@ CREATE POLICY "Owner update" ON apollo_user_data
         }
     }
 
+    }
+
+    // --- MANDATORY AUTH PROTECTION SHIELD (CLOUD-FIRST SOVEREIGN SECURITY) ---
+
+    function injectShieldStyles() {
+        if (document.getElementById('apolloShieldStyles')) return;
+        const style = document.createElement('style');
+        style.id = 'apolloShieldStyles';
+        style.textContent = `
+            .auth-shield {
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background-color: #0b0b0f;
+                background-image: radial-gradient(circle at 10% 20%, rgba(249, 115, 22, 0.08) 0%, transparent 40%),
+                                  radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.04) 0%, transparent 50%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 200000;
+                font-family: 'Inter', -apple-system, sans-serif;
+                color: #ffffff;
+                padding: 1.5rem;
+            }
+            .auth-shield-card {
+                background-color: #121218;
+                border: 2px solid #27273a;
+                border-radius: 12px;
+                width: 100%;
+                max-width: 420px;
+                padding: 2.5rem;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .auth-shield-logo {
+                width: 48px;
+                height: 48px;
+                fill: #f97316;
+                margin-bottom: 1.5rem;
+                animation: auth-logo-spin 20s linear infinite;
+            }
+            @keyframes auth-logo-spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .auth-shield-title {
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                font-size: 1.75rem;
+                font-weight: 800;
+                margin-bottom: 0.5rem;
+                letter-spacing: -0.03em;
+                color: #ffffff;
+            }
+            .auth-shield-title span {
+                color: #f97316;
+            }
+            .auth-shield-subtitle {
+                font-size: 0.9rem;
+                color: #8a8a9e;
+                line-height: 1.5;
+                margin-bottom: 2rem;
+            }
+            .auth-shield-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.75rem;
+                background-color: #ffffff;
+                color: #0b0b0f;
+                border: none;
+                border-radius: 8px;
+                padding: 0.85rem 1.5rem;
+                font-family: 'Inter', sans-serif;
+                font-size: 0.95rem;
+                font-weight: 700;
+                cursor: pointer;
+                width: 100%;
+                transition: transform 0.2s, background-color 0.2s;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .auth-shield-btn:hover {
+                background-color: #e5e5ea;
+                transform: translateY(-1px);
+            }
+            .auth-shield-btn:active {
+                transform: translateY(0);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function renderShieldLogin(shield) {
+        shield.innerHTML = `
+            <div class="auth-shield-card">
+                <svg class="auth-shield-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13H5.5L12 6.5z"/>
+                </svg>
+                <div class="auth-shield-title">Apollo<span>.</span></div>
+                <p class="auth-shield-subtitle">
+                    Welcome back. Apollo uses secure Google Cloud Authentication. Please log in to synchronize your daily logs, goals, and calendar.
+                </p>
+                
+                <button id="shieldGoogleBtn" class="auth-shield-btn">
+                    <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-3.3 3.28-8.19 3.28-13.69z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <span>Continue with Google</span>
+                </button>
+                <div id="shieldError" class="sync-error-msg" style="display:none; margin-top: 1rem;"></div>
+            </div>
+        `;
+
+        document.getElementById('shieldGoogleBtn').onclick = async () => {
+            const errBox = document.getElementById('shieldError');
+            errBox.style.display = 'none';
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin + window.location.pathname
+                    }
+                });
+                if (error) {
+                    errBox.textContent = error.message;
+                    errBox.style.display = 'block';
+                }
+            } catch (err) {
+                errBox.textContent = "Google Connection failed. Verify your Supabase Google Auth Provider is enabled.";
+                errBox.style.display = 'block';
+            }
+        };
+    }
+
+    function renderShieldSetup(shield) {
+        shield.innerHTML = `
+            <div class="auth-shield-card" style="max-width:480px;">
+                <svg class="auth-shield-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13H5.5L12 6.5z"/>
+                </svg>
+                <div class="auth-shield-title">Apollo Setup</div>
+                <p class="auth-shield-subtitle" style="margin-bottom:1.5rem;">
+                    Apollo requires a Supabase cloud database. Enter your project URL and public Anon key below.
+                </p>
+                
+                <form id="shieldConfigForm" style="width:100%; text-align:left;">
+                    <div class="sync-form-group">
+                        <label style="color:#a1a1b5; font-size:0.75rem; font-weight:700;">Supabase Project URL</label>
+                        <input type="url" id="shieldSupUrl" class="sync-input" placeholder="https://your-project.supabase.co" required style="border-radius:6px; background-color:#1c1c24; border-color:#2a2a38; color:#fff;">
+                    </div>
+                    <div class="sync-form-group" style="margin-bottom:1.5rem;">
+                        <label style="color:#a1a1b5; font-size:0.75rem; font-weight:700;">Public Anon Key</label>
+                        <input type="text" id="shieldSupKey" class="sync-input" placeholder="eyJhbGciOiJIUzI1Ni..." required style="border-radius:6px; background-color:#1c1c24; border-color:#2a2a38; color:#fff;">
+                    </div>
+                    <div id="shieldSetupError" class="sync-error-msg" style="display:none; margin-bottom:1rem;"></div>
+                    <button type="submit" class="auth-shield-btn" style="background-color:#f97316; color:#fff;">Connect Supabase</button>
+                </form>
+            </div>
+        `;
+
+        document.getElementById('shieldConfigForm').onsubmit = (e) => {
+            e.preventDefault();
+            const url = document.getElementById('shieldSupUrl').value.trim();
+            const key = document.getElementById('shieldSupKey').value.trim();
+            const errBox = document.getElementById('shieldSetupError');
+
+            if (url && key) {
+                localStorage.setItem(STORAGE_KEYS.SUPABASE_URL, url);
+                localStorage.setItem(STORAGE_KEYS.SUPABASE_KEY, key);
+                initSupabase();
+
+                if (supabase) {
+                    enforceMandatoryAuth();
+                } else {
+                    errBox.textContent = "Could not initialize client. Check your URL formatting.";
+                    errBox.style.display = 'block';
+                }
+            }
+        };
+    }
+
+    async function enforceMandatoryAuth() {
+        let shield = document.getElementById('authShield');
+        if (!shield) {
+            shield = document.createElement('div');
+            shield.id = 'authShield';
+            shield.className = 'auth-shield';
+            
+            injectShieldStyles();
+            
+            shield.innerHTML = `
+                <div class="auth-shield-card">
+                    <svg class="auth-shield-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13H5.5L12 6.5z"/>
+                    </svg>
+                    <div class="auth-shield-title">Apollo<span>.</span></div>
+                    <div class="auth-shield-subtitle" style="margin-bottom:0;">Verifying security session...</div>
+                    <div style="margin-top: 1.5rem;" class="sync-status-dot active"></div>
+                </div>
+            `;
+            document.body.appendChild(shield);
+        }
+
+        if (!supabase) {
+            initSupabase();
+        }
+
+        if (!supabase) {
+            renderShieldSetup(shield);
+            return;
+        }
+
+        try {
+            const user = await window.ApolloStorage.getLoggedInUser();
+            if (user) {
+                // Pull cloud data first (Sovereign master source)
+                await window.ApolloStorage.pullFromCloud();
+                
+                // Fade out and dismiss shield
+                shield.style.opacity = '0';
+                shield.style.transition = 'opacity 0.4s ease';
+                setTimeout(() => {
+                    shield.remove();
+                }, 400);
+            } else {
+                renderShieldLogin(shield);
+            }
+        } catch (e) {
+            console.error("Enforce auth failed:", e);
+            renderShieldLogin(shield);
+        }
+    }
+
     // Connect trigger button listener when Document is fully loaded
     function bootstrapSyncUI() {
         const syncBtn = document.getElementById('syncBtn');
@@ -976,8 +1210,12 @@ CREATE POLICY "Owner update" ON apollo_user_data
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bootstrapSyncUI);
+        document.addEventListener('DOMContentLoaded', () => {
+            bootstrapSyncUI();
+            enforceMandatoryAuth();
+        });
     } else {
         bootstrapSyncUI();
+        enforceMandatoryAuth();
     }
 })();
